@@ -27,7 +27,10 @@ Optional : Attach a header image for the menu.
 
 ## How is it done ? 
 
-Using IMGUI and screen dpi to adjust the UI scale and draw the buttons on the screen. A main scene will be chosen by this script as the entry point ( first scene in the build order ) - later it will fetch the list of all the build in scenes and one on a button touch / click. I included few tricks to handle scrolling on mobile since OnGUI ScrollView doesn't support mobile scroll. Once the script gets enabled it will fetch the list of all the scenes and will update them using the custom editor UI ( in unity inspector ) - those values are serialized hence its possible to retain anychanges during play mode. The header image is optional and will not take empty space if the header filed is left empty. On script start it will attach itself to the do not destroy scene and will be kept alive between all scenes. 
+Using IMGUI and screen dpi to adjust the UI scale and draw the buttons on the screen. A main scene will be chosen by this script as the entry point ( first scene in the build order ) - later it will fetch the list of all the build in scenes and one on a button touch / click. I included few tricks to handle scrolling on mobile since OnGUI ScrollView doesn't support mobile scroll.  
+Once the script gets enabled it will fetch the list of all the scenes and will update them using the custom editor UI ( in unity inspector ) - those values are serialized hence its possible to retain anychanges during play mode. The header image is optional and will not take empty space if the header filed is left empty.   
+On script start it will attach itself to the do not destroy scene and will be kept alive between all scenes.  
+Note it will automaticlly create a camera if it doesn't exists during play mode, the camera is set to have a black background and no lights are needed for the UI part. On app start / every time a scene is changed - event system will be added if none exists. 
 
 ## Demo
 
