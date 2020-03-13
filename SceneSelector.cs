@@ -227,7 +227,7 @@ public class SceneSelector : MonoBehaviour
             GUILayout.MaxHeight( screen.height - ( header == null ? 0 : texH ) )
         };
 
-        using(new GUILayout.VerticalScope( GUI.skin.textArea, oScroll ))
+        using(new GUILayout.VerticalScope( EditorStyles.helpBox, oScroll ))
         {
             using(new GUILayout.HorizontalScope( ))
             {
@@ -276,6 +276,8 @@ public class SceneSelectorEditor : Editor
 
     private void OnEnable( )
     {
+        if ( Application.isPlaying ) return;
+
         header = serializedObject.FindProperty( "header" );
 
         PrependFirstScene( );
@@ -289,6 +291,12 @@ public class SceneSelectorEditor : Editor
 
     public override void OnInspectorGUI( )
     {
+        if (Application.isPlaying)
+        {
+            PlayModeGUI();
+            return;
+        }
+
         InitStyles( );
 
         GUILayout.Space( 5 );
@@ -357,6 +365,11 @@ public class SceneSelectorEditor : Editor
         GUILayout.Space( 5 );
 
         using( new GUILayout.VerticalScope( EditorStyles.helpBox ) ) SceneListGUI( );
+    }
+
+    void PlayModeGUI()
+    {
+        EditorGUILayout.HelpBox("Component changes locked during playmode", MessageType.Warning);
     }
 
     void SceneListGUI( )
