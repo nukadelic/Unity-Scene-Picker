@@ -12,9 +12,35 @@ public class SceneSelector : MonoBehaviour
 {
     /// TODO: add headers array in between scenes that will be rendered as large labels in between the buttons
     /// quick way : scenes.Add( "title::My Header Text Value" );
+    /// 
     [SerializeField, HideInInspector] internal Texture header = null;
-    [SerializeField, HideInInspector] internal string loader;
-    [SerializeField, HideInInspector] internal List<string> scenes;
+
+    string main = "";
+
+    List<string> scenes;
+
+    private void Awake()
+    {
+        if (scenes != null) scenes.Clear();
+        else scenes = new List<string>();
+
+        int overflow = 1000, count = 0;
+        
+        while( overflow -- > 0 )
+        {
+            try
+            {
+                var path = SceneUtility.GetScenePathByBuildIndex( count ++ );
+                var valid = ! string.IsNullOrEmpty(path);
+                //int start = path.LastIndexOf("/");
+                //Debug.Log(start + " " + path.Length + " " + path);
+                //string name = path.Substring(start, path.Length - start);
+                if( valid && string.IsNullOrEmpty(main) ) main = path;
+                if( valid ) scenes.Add( path );
+            }
+            catch( System.Exception e ) { e.ToString(); break; }
+        }
+    }
 
     void Start()
     {
@@ -158,7 +184,7 @@ public class SceneSelector : MonoBehaviour
     {
         var scene = SceneManager.GetActiveScene();
 
-        if (!(!swap && scene.path != loader)) return false;
+        if (!(!swap && scene.path != main)) return false;
 
         var rect = new Rect(0, 0, 50 * scale, 25 * scale);
 
@@ -236,9 +262,9 @@ public class SceneSelector : MonoBehaviour
                 {
                     scroll = scope.scrollPosition;
 
-                    foreach (var scene in scenes)
+                    foreach (var scene in scenes )
                     {
-                        if (scene == loader) continue;
+                        if ( scene == main ) continue;
 
                         GUILayout.Space(6 * scale);
 
@@ -252,6 +278,7 @@ public class SceneSelector : MonoBehaviour
                         {
                             swap = false;
                             changed = false;
+
                             SceneManager.LoadScene(scene, LoadSceneMode.Single);
                         }
                     }
@@ -270,24 +297,15 @@ public class SceneSelector : MonoBehaviour
 [CustomEditor(typeof(SceneSelector))]
 public class SceneSelectorEditor : Editor
 {
-    [InitializeOnLoadMethod]
-    static void Hook()
-    {
-        Debug.Log("hook");
+    //[InitializeOnLoadMethod]
+    //static void Hook() => AssemblyReloadEvents.beforeAssemblyReload += UpdateSceneList;
+    //static void UpdateSceneList()
+    //{
+    //    AssemblyReloadEvents.beforeAssemblyReload -= UpdateSceneList;
+    //    if( staticTarget != null ) staticTarget.scenes = GetEnabledScenes();
+    //}
 
-        AssemblyReloadEvents.beforeAssemblyReload += Refresh;
-    }
-
-    static void Refresh()
-    {
-        Debug.Log("hook refreshed");
-
-        AssemblyReloadEvents.beforeAssemblyReload -= Refresh;
-
-        staticTarget.scenes = GetEnabledScenes();
-    }
-
-    static SceneSelector staticTarget;
+    static SceneSelector staticTarget = null;
 
 
     static bool foldout = true;
@@ -305,9 +323,8 @@ public class SceneSelectorEditor : Editor
 
         PrependFirstScene();
 
-        UpdateTargetScenes();
-
-        UpdateTargetLoader();
+        //UpdateTargetScenes();
+        //UpdateTargetLoader();
     }
 
     #region GUI
@@ -425,7 +442,7 @@ public class SceneSelectorEditor : Editor
 
                 if (arrange)
                 {
-                    using (new EditorGUI.DisabledGroupScope(i == 0))
+                    using (new EditorGUI.DisabledGroupScope(i < 2 )) // 1st one at 0 is main 
                         if (GUILayout.Button("▲", sBtnUp, GUILayout.Width(25)))
                             SwapBuildSceneIndexes(i, i - 1);
 
@@ -437,7 +454,7 @@ public class SceneSelectorEditor : Editor
                 if (GUILayout.Button("X", sBtnDel, GUILayout.Width(25)))
                 {
                     RemoveScene(path);
-                    UpdateTargetScenes();
+                    //UpdateTargetScenes();
                     return;
                 }
             }
@@ -499,9 +516,9 @@ public class SceneSelectorEditor : Editor
         
         .Where(s => s.enabled).Select(s => s.path).ToList();
 
-    void UpdateTargetScenes() => ((SceneSelector)target).scenes = GetEnabledScenes();
+    //void UpdateTargetScenes() => ((SceneSelector)target).scenes = GetEnabledScenes();
 
-    void UpdateTargetLoader() => ((SceneSelector)target).loader = GetCurrentScenePath();
+    //void UpdateTargetLoader() => ((SceneSelector)target).loader = GetCurrentScenePath();
 
     void RemoveScene(string path)
     {
