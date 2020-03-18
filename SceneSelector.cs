@@ -89,7 +89,7 @@ public class SceneSelector : MonoBehaviour
 
         sBtn = new GUIStyle(GUI.skin.button);
         sBtn.fontSize = Mathf.FloorToInt(14 * scale);
-        //sBtn.onNormal.background = Texture2D.grayTexture;
+        sBtn.normal.background = Texture2D.grayTexture;
         sBtn.wordWrap = true;
 
         sBtnBack = new GUIStyle(sBtn);
@@ -270,7 +270,27 @@ public class SceneSelector : MonoBehaviour
 [CustomEditor(typeof(SceneSelector))]
 public class SceneSelectorEditor : Editor
 {
-    static bool foldout = false;
+    [InitializeOnLoadMethod]
+    static void Hook()
+    {
+        Debug.Log("hook");
+
+        AssemblyReloadEvents.beforeAssemblyReload += Refresh;
+    }
+
+    static void Refresh()
+    {
+        Debug.Log("hook refreshed");
+
+        AssemblyReloadEvents.beforeAssemblyReload -= Refresh;
+
+        staticTarget.scenes = GetEnabledScenes();
+    }
+
+    static SceneSelector staticTarget;
+
+
+    static bool foldout = true;
     static bool arrange = false;
 
     SerializedProperty header;
@@ -278,6 +298,8 @@ public class SceneSelectorEditor : Editor
     private void OnEnable()
     {
         if (Application.isPlaying) return;
+
+        staticTarget = ( SceneSelector ) target;
 
         header = serializedObject.FindProperty("header");
 
@@ -390,7 +412,7 @@ public class SceneSelectorEditor : Editor
 
             using (new GUILayout.HorizontalScope())
             {
-                bool buildCheck = EditorGUILayout.ToggleLeft(GUIContent.none, scene.enabled, GUILayout.Width(5));
+                bool buildCheck = EditorGUILayout.ToggleLeft(GUIContent.none, scene.enabled, GUILayout.Width(15));
 
                 if (buildCheck != scene.enabled) ToggleBuildActive(i, buildCheck);
 
@@ -473,9 +495,11 @@ public class SceneSelectorEditor : Editor
         .ToArray();
     }
 
-    void UpdateTargetScenes() => ((SceneSelector)target).scenes =
+    static List<string> GetEnabledScenes() => EditorBuildSettings.scenes
+        
+        .Where(s => s.enabled).Select(s => s.path).ToList();
 
-        EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToList();
+    void UpdateTargetScenes() => ((SceneSelector)target).scenes = GetEnabledScenes();
 
     void UpdateTargetLoader() => ((SceneSelector)target).loader = GetCurrentScenePath();
 
