@@ -24,19 +24,19 @@ public class SceneSelector : MonoBehaviour
         if (scenes != null) scenes.Clear();
         else scenes = new List<string>();
 
-        int overflow = 1000, count = 0;
+        int overflow = 100, count = 0;
         
         while( overflow -- > 0 )
         {
             try
             {
                 var path = SceneUtility.GetScenePathByBuildIndex( count ++ );
-                var valid = ! string.IsNullOrEmpty(path);
+                if (string.IsNullOrEmpty(path)) break;
                 //int start = path.LastIndexOf("/");
                 //Debug.Log(start + " " + path.Length + " " + path);
                 //string name = path.Substring(start, path.Length - start);
-                if( valid && string.IsNullOrEmpty(main) ) main = path;
-                if( valid ) scenes.Add( path );
+                if( string.IsNullOrEmpty(main) ) main = path;
+                scenes.Add( path );
             }
             catch( System.Exception e ) { e.ToString(); break; }
         }
@@ -46,11 +46,11 @@ public class SceneSelector : MonoBehaviour
     {
         DontDestroyOnLoad(gameObject);
 
-        SceneManager.activeSceneChanged += (_, o) =>
-        {
-            changed = true;
-            TryAddES();
-        };
+        //SceneManager.activeSceneChanged += (_, o) =>
+        //{
+        //    changed = true;
+        //    TryAddES();
+        //};
 
         // SceneManager.sceneUnloaded += _ => changed = true;
 
@@ -74,7 +74,7 @@ public class SceneSelector : MonoBehaviour
 
         scale = Screen.dpi / 96;
 
-        MakeStyles();
+        if ( sBtn == null ) InitStyles();
 
         if (!changed)
         {
@@ -109,14 +109,17 @@ public class SceneSelector : MonoBehaviour
 
     float texW = 0, texH = 0;
 
-    void MakeStyles()
+    void InitStyles()
     {
-        if (sBtn != null) return;
-
         sBtn = new GUIStyle(GUI.skin.button);
         sBtn.fontSize = Mathf.FloorToInt(14 * scale);
-        sBtn.normal.background = Texture2D.grayTexture;
         sBtn.wordWrap = true;
+        sBtn.normal.background = Texture2D.grayTexture;
+        sBtn.border = new RectOffset(1, 1, 1, 1);
+        var tex2D = new Texture2D(3, 3);
+        for (var x = 0; x < 3; ++x) for (var y = 0; y < 3; ++y) tex2D.SetPixel(x, y, Color.white);
+        tex2D.SetPixel(sBtn.border.left, sBtn.border.top, Color.grey); tex2D.filterMode = FilterMode.Point; tex2D.Apply();
+        sBtn.hover.background = sBtn.active.background = sBtn.focused.background = tex2D;
 
         sBtnBack = new GUIStyle(sBtn);
         sBtnBack.fontSize = Mathf.FloorToInt(12 * scale);
@@ -154,7 +157,8 @@ public class SceneSelector : MonoBehaviour
 
     void LoadingGUI()
     {
-        GUI.Label(screen, "Loading ...", sLoadText);
+        string s = $"{Mathf.RoundToInt(load_progress*98f)}%";
+        GUI.Label(screen, "Loading " + s , sLoadText);
     }
 
     void HandleTouchScroll()
@@ -245,6 +249,20 @@ public class SceneSelector : MonoBehaviour
         GUI.DrawTexture(rect, header);
     }
 
+    float load_progress = 0f;
+
+    void SceneLoading(AsyncOperation op )
+    {
+        load_progress = op.progress;
+
+        if( op.isDone )
+        {
+            changed = true;
+            TryAddES();
+            sBtn = null;
+        }
+    }
+
     void ButtonsGUI()
     {
         var oScroll = new GUILayoutOption[] {
@@ -279,7 +297,7 @@ public class SceneSelector : MonoBehaviour
                             swap = false;
                             changed = false;
 
-                            SceneManager.LoadScene(scene, LoadSceneMode.Single);
+                            SceneManager.LoadSceneAsync(scene, LoadSceneMode.Single).completed += SceneLoading;
                         }
                     }
 
